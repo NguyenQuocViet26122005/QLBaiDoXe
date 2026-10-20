@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  RESIDENT
+  GUARD
+  MANAGER
+  ADMIN
+}
+
+enum CommonStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+}
+
+enum VehicleType {
+  MOTORBIKE
+  CAR
+  BICYCLE
+  ELECTRIC_BIKE
+}
+
+enum RegistrationType {
+  NEW
+  RENEWAL
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+enum TicketStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  LOCKED
+  CANCELLED
+  REVOKED
+}
+
+enum SessionStatus {
+  PARKING
+  COMPLETED
+  ABNORMAL
+}
+
+enum ViolationType {
+  INVALID_QR
+  EXPIRED_TICKET
+  WRONG_VEHICLE
+  UNAUTHORIZED_VEHICLE
+  OTHER
+}
+
+enum ViolationStatus {
+  OPEN
+  RESOLVED
+}
+
+enum NotificationType {
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  TICKET_EXPIRING
+  TICKET_EXPIRED
+  QR_LOST
+  TICKET_LOCKED
+  VIOLATION
+  SYSTEM
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique @db.VarChar(191)
+  passwordHash String @db.VarChar(255)
+  fullName String @db.VarChar(120)
+  phone String? @unique @db.VarChar(20)
+  role UserRole @default(RESIDENT)
+  status AccountStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resident Resident?
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  reviewedRegistrations ParkingRegistration[] @relation("RegistrationReviewer")
+  confirmedPayments Payment[] @relation("PaymentConfirmer")
+  checkIns ParkingSession[] @relation("CheckInGuard")
+  checkOuts ParkingSession[] @relation("CheckOutGuard")
+  createdViolations Violation[] @relation("ViolationCreator")
+  resolvedViolations Violation[] @relation("ViolationResolver")
+  auditLogs AuditLog[] @relation("AuditActor")
+}
+
+model Apartment {
+  id Int @id @default(autoincrement())
+  building String @db.VarChar(30)
+  floor Int
+  apartmentNumber String @db.VarChar(30)
+  ownerName String @db.VarChar(120)
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  residents Resident[]
+  @@unique([building, apartmentNumber])
+}
+
+model Resident {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  apartmentId Int?
+  residentCode String @unique @db.VarChar(30)
+  identityNumber String? @unique @db.VarChar(30)
+  dateOfBirth DateTime?
+  address String? @db.VarChar(255)
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  apartment Apartment? @relation(fields:[apartmentId],references:[id],onDelete:SetNull)
+  vehicles Vehicle[]
+  registrations ParkingRegistration[]
+  notifications Notification[]
+  @@index([apartmentId])
+}
+
+model Vehicle {
+  id Int @id @default(autoincrement())
+  residentId Int
+  licensePlate String @db.VarChar(30)
+  normalizedPlate String @unique @db.VarChar(30)
+  type VehicleType
+  brand String? @db.VarChar(60)
+  model String? @db.VarChar(60)
+  color String? @db.VarChar(40)
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resident Resident @relation(fields:[residentId],references:[id],onDelete:Restrict)
+  registrations ParkingRegistration[]
+  tickets ParkingTicket[]
+  sessions ParkingSession[]
+  violations Violation[]
+  @@index([residentId])
+}
+
+model ParkingArea {
+  id Int @id @default(autoincrement())
+  code String @unique @db.VarChar(30)
+  name String @db.VarChar(100)
+  location String @db.VarChar(255)
+  capacity Int
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  registrations ParkingRegistration[]
+  tickets ParkingTicket[]
+  sessions ParkingSession[]
+  priceConfigs PriceConfig[]
+}
+
+model ParkingPlan {
+  id Int @id @default(autoincrement())
+  code String @unique @db.VarChar(30)
+  name String @db.VarChar(100)
+  vehicleType VehicleType
+  monthlyPrice Decimal @db.Decimal(12,2)
+  durationMonths Int @default(1)
+  description String? @db.Text
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  registrations ParkingRegistration[]
+  tickets ParkingTicket[]
+  priceConfigs PriceConfig[]
+}
+
+model PriceConfig {
+  id Int @id @default(autoincrement())
+  planId Int
+  areaId Int?
+  amount Decimal @db.Decimal(12,2)
+  effectiveFrom DateTime
+  effectiveTo DateTime?
+  status CommonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  plan ParkingPlan @relation(fields:[planId],references:[id],onDelete:Cascade)
+  area ParkingArea? @relation(fields:[areaId],references:[id],onDelete:Cascade)
+  registrations ParkingRegistration[]
+  tickets ParkingTicket[]
+  @@index([planId,areaId,effectiveFrom])
+}
+
+model ParkingRegistration {
+  id Int @id @default(autoincrement())
+  residentId Int
+  vehicleId Int
+  planId Int
+  areaId Int
+  type RegistrationType @default(NEW)
+  status RegistrationStatus @default(PENDING)
+  quotedAmount Decimal @db.Decimal(12,2)
+  requestedStartDate DateTime
+  note String? @db.VarChar(500)
+  rejectionReason String? @db.VarChar(500)
+  reviewerId Int?
+  reviewedAt DateTime?
+  previousTicketId Int?
+  priceConfigId Int?
+  expiresAt DateTime
+  openRequestKey String? @unique @db.VarChar(60)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resident Resident @relation(fields:[residentId],references:[id],onDelete:Restrict)
+  vehicle Vehicle @relation(fields:[vehicleId],references:[id],onDelete:Restrict)
+  plan ParkingPlan @relation(fields:[planId],references:[id],onDelete:Restrict)
+  area ParkingArea @relation(fields:[areaId],references:[id],onDelete:Restrict)
+  reviewer User? @relation("RegistrationReviewer",fields:[reviewerId],references:[id],onDelete:SetNull)
+  previousTicket ParkingTicket? @relation("TicketRenewals",fields:[previousTicketId],references:[id],onDelete:SetNull)
+  priceConfig PriceConfig? @relation(fields:[priceConfigId],references:[id],onDelete:Restrict)
+  payments Payment[]
+  ticket ParkingTicket?
+  @@index([residentId,status])
+  @@index([vehicleId,status])
+  @@index([expiresAt,status])
+}
+
+model ParkingTicket {
+  id Int @id @default(autoincrement())
+  registrationId Int @unique
+  vehicleId Int
+  planId Int
+  areaId Int
+  ticketCode String @unique @db.VarChar(40)
+  qrToken String @unique @db.VarChar(128)
+  qrVersion Int @default(1)
+  startDate DateTime
+  endDate DateTime
+  price Decimal @db.Decimal(12,2)
+  priceConfigId Int?
+  status TicketStatus @default(PENDING)
+  lockReason String? @db.VarChar(500)
+  lostReportedAt DateTime?
+  activeVehicleKey String? @unique @db.VarChar(60)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  registration ParkingRegistration @relation(fields:[registrationId],references:[id],onDelete:Restrict)
+  vehicle Vehicle @relation(fields:[vehicleId],references:[id],onDelete:Restrict)
+  plan ParkingPlan @relation(fields:[planId],references:[id],onDelete:Restrict)
+  area ParkingArea @relation(fields:[areaId],references:[id],onDelete:Restrict)
+  priceConfig PriceConfig? @relation(fields:[priceConfigId],references:[id],onDelete:Restrict)
+  payments Payment[]
+  sessions ParkingSession[]
+  violations Violation[]
+  renewalRegistrations ParkingRegistration[] @relation("TicketRenewals")
+  @@index([vehicleId,status,endDate])
+}
+
+model Payment {
+  id Int @id @default(autoincrement())
+  registrationId Int
+  ticketId Int?
+  paymentCode String @unique @db.VarChar(40)
+  amount Decimal @db.Decimal(12,2)
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+  reference String? @db.VarChar(100)
+  idempotencyKey String? @unique @db.VarChar(100)
+  paidRegistrationKey String? @unique @db.VarChar(60)
+  confirmedById Int?
+  paidAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  registration ParkingRegistration @relation(fields:[registrationId],references:[id],onDelete:Restrict)
+  ticket ParkingTicket? @relation(fields:[ticketId],references:[id],onDelete:SetNull)
+  confirmedBy User? @relation("PaymentConfirmer",fields:[confirmedById],references:[id],onDelete:SetNull)
+  @@index([registrationId,status])
+}
+
+model ParkingSession {
+  id Int @id @default(autoincrement())
+  vehicleId Int
+  ticketId Int
+  areaId Int
+  checkInGuardId Int
+  checkOutGuardId Int?
+  checkInGate String @db.VarChar(50)
+  checkOutGate String? @db.VarChar(50)
+  checkInAt DateTime @default(now())
+  checkOutAt DateTime?
+  status SessionStatus @default(PARKING)
+  abnormalReason String? @db.VarChar(500)
+  openVehicleKey String? @unique @db.VarChar(60)
+  checkInRequestKey String? @unique @db.VarChar(100)
+  checkOutRequestKey String? @unique @db.VarChar(100)
+  vehicle Vehicle @relation(fields:[vehicleId],references:[id],onDelete:Restrict)
+  ticket ParkingTicket @relation(fields:[ticketId],references:[id],onDelete:Restrict)
+  area ParkingArea @relation(fields:[areaId],references:[id],onDelete:Restrict)
+  checkInGuard User @relation("CheckInGuard",fields:[checkInGuardId],references:[id],onDelete:Restrict)
+  checkOutGuard User? @relation("CheckOutGuard",fields:[checkOutGuardId],references:[id],onDelete:SetNull)
+  violations Violation[]
+  @@index([vehicleId,status])
+  @@index([checkInAt])
+}
+
+model Violation {
+  id Int @id @default(autoincrement())
+  vehicleId Int
+  ticketId Int?
+  sessionId Int?
+  guardId Int
+  type ViolationType
+  description String @db.VarChar(1000)
+  occurredAt DateTime @default(now())
+  status ViolationStatus @default(OPEN)
+  resolution String? @db.VarChar(1000)
+  resolvedById Int?
+  resolvedAt DateTime?
+  fineAmount Decimal? @db.Decimal(12,2)
+  dedupKey String? @unique @db.VarChar(100)
+  vehicle Vehicle @relation(fields:[vehicleId],references:[id],onDelete:Restrict)
+  ticket ParkingTicket? @relation(fields:[ticketId],references:[id],onDelete:SetNull)
+  session ParkingSession? @relation(fields:[sessionId],references:[id],onDelete:SetNull)
+  guard User @relation("ViolationCreator",fields:[guardId],references:[id],onDelete:Restrict)
+  resolvedBy User? @relation("ViolationResolver",fields:[resolvedById],references:[id],onDelete:SetNull)
+  @@index([vehicleId,status])
+}
+
+model AuditLog {
+  id BigInt @id @default(autoincrement())
+  actorId Int?
+  actorRole UserRole
+  action String @db.VarChar(80)
+  entity String @db.VarChar(80)
+  entityId String @db.VarChar(80)
+  reason String? @db.VarChar(1000)
+  metadata Json?
+  createdAt DateTime @default(now())
+  actor User? @relation("AuditActor",fields:[actorId],references:[id],onDelete:SetNull)
+  @@index([entity,entityId,createdAt])
+  @@index([actorId,createdAt])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+  userId Int
+  residentId Int?
+  type NotificationType
+  title String @db.VarChar(150)
+  message String @db.VarChar(1000)
+  dedupKey String? @unique @db.VarChar(191)
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  resident Resident? @relation(fields:[residentId],references:[id],onDelete:Cascade)
+  @@index([userId,readAt,createdAt])
+}
+
+model RefreshToken {
+  id Int @id @default(autoincrement())
+  userId Int
+  tokenHash String @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  replacedByHash String? @db.VarChar(64)
+  createdAt DateTime @default(now())
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  @@index([userId,expiresAt])
+}
