@@ -1,0 +1,42 @@
+import { z } from 'zod';
+const businessDate = z.preprocess(value => {
+  if (typeof value !== 'string') return value;
+  const civil = value.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(civil)) {
+    const parsed = new Date(`${civil}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== civil) return new Date(NaN);
+    if (value.length === 10) return `${value}T00:00:00+07:00`;
+  }
+  return value;
+}, z.coerce.date());
+export const vehicleLookupQuery = z.object({ licensePlate: z.string().trim().min(4).max(30) });
+export const idParams=z.object({id:z.coerce.number().int().positive()});
+export const pagination=z.object({page:z.coerce.number().int().positive().default(1),limit:z.coerce.number().int().min(1).max(100).default(20),search:z.string().trim().optional(),status:z.string().optional()});
+export const authSchemas={register:z.object({email:z.email(),password:z.string().min(8).max(72),fullName:z.string().trim().min(2).max(120),phone:z.string().trim().min(8).max(20).optional(),apartmentId:z.number().int().positive().optional(),identityNumber:z.string().trim().max(30).optional()}),login:z.object({email:z.email(),password:z.string().min(1)}),token:z.object({refreshToken:z.string().min(20)})};
+const optionalText=(max:number)=>z.preprocess(v=>v===''||v===null?undefined:v,z.string().trim().max(max).optional());
+export const residentCreate=z.object({email:z.email(),password:z.string().min(8).max(72),fullName:z.string().trim().min(2).max(120),phone:optionalText(20),apartmentId:z.number().int().positive().nullable().optional(),identityNumber:optionalText(30),address:optionalText(255)});
+export const residentUpdate=z.object({fullName:z.string().min(2).optional(),phone:z.string().nullable().optional(),apartmentId:z.number().int().positive().nullable().optional(),identityNumber:z.string().nullable().optional(),address:z.string().nullable().optional(),status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const apartmentBody=z.object({building:z.string().min(1).max(30),floor:z.number().int().min(0),apartmentNumber:z.string().min(1).max(30),ownerName:z.string().min(2),status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const apartmentPatch=apartmentBody.partial();
+export const vehicleBody=z.object({residentId:z.number().int().positive().optional(),licensePlate:z.string().min(4).max(30),type:z.enum(['MOTORBIKE','CAR','BICYCLE','ELECTRIC_BIKE']),brand:z.string().optional(),model:z.string().optional(),color:z.string().optional()});
+export const vehiclePatch=vehicleBody.partial().extend({status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const planBody=z.object({code:z.string().min(2),name:z.string().min(2),vehicleType:z.enum(['MOTORBIKE','CAR','BICYCLE','ELECTRIC_BIKE']),monthlyPrice:z.number().positive(),durationMonths:z.number().int().positive(),description:z.string().optional(),status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const planPatch=planBody.partial();
+export const areaBody=z.object({code:z.string().min(2),name:z.string().min(2),location:z.string().min(2),capacity:z.number().int().nonnegative(),status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const areaPatch=areaBody.partial();
+export const priceBody=z.object({planId:z.number().int().positive(),areaId:z.number().int().positive().nullable().optional(),amount:z.number().positive(),effectiveFrom:businessDate,effectiveTo:businessDate.nullable().optional(),status:z.enum(['ACTIVE','INACTIVE']).optional()});
+export const pricePatch=priceBody.partial();
+export const userPatch=z.object({role:z.enum(['RESIDENT','GUARD','MANAGER','ADMIN']).optional(),status:z.enum(['ACTIVE','INACTIVE','LOCKED']).optional(),fullName:z.string().min(2).optional()});
+export const registrationBody=z.object({vehicleId:z.number().int().positive(),planId:z.number().int().positive(),areaId:z.number().int().positive(),requestedStartDate:businessDate.optional(),note:z.string().max(500).optional(),previousTicketId:z.number().int().positive().optional()});
+export const rejectBody=z.object({reason:z.string().min(3).max(500)});
+export const paymentBody=z.object({registrationId:z.number().int().positive(),method:z.enum(['CASH','BANK_TRANSFER']),status:z.enum(['PENDING','PAID','FAILED']).default('PAID'),reference:z.string().max(100).optional(),idempotencyKey:z.string().min(8).max(100).optional()});
+export const paymentStatusBody=z.object({status:z.enum(['PENDING','PAID','FAILED','REFUNDED'])});
+export const qrVerifyBody=z.object({qrToken:z.string().min(20),vehicleId:z.number().int().positive().optional(),areaId:z.number().int().positive().optional(),mode:z.enum(['IN','OUT']).default('IN'),licensePlate:z.string().trim().min(4).max(30).optional()});
+export const parkingBody=qrVerifyBody.extend({gate:z.string().trim().min(2).max(50),requestId:z.string().min(8).max(100).optional()});
+export const manualCheckoutBody=z.object({gate:z.string().trim().min(2).max(50),reason:z.string().trim().min(3).max(500)});
+export const sessionCorrectionBody=z.object({reason:z.string().trim().min(3).max(500),checkInGate:z.string().trim().min(2).max(50).optional(),checkOutGate:z.string().trim().min(2).max(50).nullable().optional(),checkInAt:businessDate.optional(),checkOutAt:businessDate.nullable().optional(),status:z.enum(['PARKING','COMPLETED','ABNORMAL']).optional(),abnormalReason:z.string().max(500).nullable().optional()});
+export const violationBody=z.object({vehicleId:z.number().int().positive(),ticketId:z.number().int().positive().optional(),sessionId:z.number().int().positive().optional(),type:z.enum(['INVALID_QR','EXPIRED_TICKET','WRONG_VEHICLE','UNAUTHORIZED_VEHICLE','OTHER']),description:z.string().min(3).max(1000),fineAmount:z.number().nonnegative().optional(),requestId:z.string().min(8).max(100).optional()});
+export const violationPatch=z.object({description:z.string().min(3).max(1000).optional(),fineAmount:z.number().nonnegative().nullable().optional()});
+export const resolveBody=z.object({resolution:z.string().min(3).max(1000)});
+export const lockBody=z.object({reason:z.string().min(3).max(500)});
+export const renewalBody=z.object({planId:z.number().int().positive().optional(),areaId:z.number().int().positive().optional()});
