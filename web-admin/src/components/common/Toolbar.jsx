@@ -1,0 +1,1 @@
+import { MagnifyingGlass } from '@phosphor-icons/react';export default function Toolbar({query,onQuery,placeholder='Tìm kiếm',children}){return <div className="toolbar"><label className="search-box"><MagnifyingGlass/><input value={query} onChange={e=>onQuery(e.target.value)} placeholder={placeholder}/></label><div className="toolbar-actions">{children}</div></div>}

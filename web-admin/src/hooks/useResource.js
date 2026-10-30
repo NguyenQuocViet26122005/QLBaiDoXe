@@ -1,0 +1,2 @@
+import { useCallback,useEffect,useState } from 'react';
+export function useResource(loader){const[items,setItems]=useState([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');const refresh=useCallback(async()=>{setLoading(true);setError('');try{setItems(await loader()||[]);}catch(err){setError(err.message);}finally{setLoading(false);}},[loader]);useEffect(()=>{refresh();},[refresh]);return{items,setItems,loading,error,refresh};}

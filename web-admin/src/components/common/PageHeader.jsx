@@ -1,0 +1,2 @@
+import { useLocation } from 'react-router-dom';import { NAV_GROUPS } from '../../constants/navigation';
+export default function PageHeader({title,description,eyebrow,actions}){const{pathname}=useLocation();const label=eyebrow??NAV_GROUPS[pathname];return <header className="page-heading"><div className="page-heading-copy">{label&&<span className="eyebrow">{label}</span>}<h1>{title}</h1><p>{description}</p></div>{actions&&<div className="page-actions">{actions}</div>}</header>}
