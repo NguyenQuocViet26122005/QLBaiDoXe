@@ -1,0 +1,2 @@
+import http,{dataOf} from './httpClient';
+export const getResidents=()=>http.get('/residents').then(dataOf);export const getResident=(id)=>http.get(`/residents/${id}`).then(dataOf);export const createResident=(body)=>http.post('/residents',body).then(dataOf);export const updateResident=(id,body)=>http.patch(`/residents/${id}`,body).then(dataOf);export const deleteResident=(id)=>http.delete(`/residents/${id}`).then(dataOf);
