@@ -1,0 +1,3 @@
+import http,{dataOf} from './httpClient';
+export const updatePaymentStatus=(id,status)=>http.patch(`/payments/${id}/status`,{status}).then(dataOf);
+export const getRegistrations=()=>http.get('/registrations').then(dataOf);export const getRegistration=(id)=>http.get(`/registrations/${id}`).then(dataOf);export const approveRegistration=(id)=>http.patch(`/registrations/${id}/approve`).then(dataOf);export const rejectRegistration=(id,reason)=>http.patch(`/registrations/${id}/reject`,{reason}).then(dataOf);export const cancelRegistration=(id)=>http.patch(`/registrations/${id}/cancel`).then(dataOf);export const recordPayment=(body)=>http.post('/payments',body).then(dataOf);
