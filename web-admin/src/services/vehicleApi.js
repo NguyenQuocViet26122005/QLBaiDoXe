@@ -1,0 +1,2 @@
+import http,{dataOf} from './httpClient';
+export const getVehicles=()=>http.get('/vehicles').then(dataOf);export const getVehicle=(id)=>http.get(`/vehicles/${id}`).then(dataOf);export const createVehicle=(body)=>http.post('/vehicles',body).then(dataOf);export const updateVehicle=(id,body)=>http.patch(`/vehicles/${id}`,body).then(dataOf);export const deleteVehicle=(id)=>http.delete(`/vehicles/${id}`).then(dataOf);
