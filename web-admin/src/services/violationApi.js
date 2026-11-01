@@ -1,0 +1,2 @@
+import http,{dataOf} from './httpClient';
+export const getViolations=()=>http.get('/violations').then(dataOf);export const getViolation=(id)=>http.get(`/violations/${id}`).then(dataOf);export const createViolation=(body)=>http.post('/violations',body).then(dataOf);export const updateViolation=(id,body)=>http.patch(`/violations/${id}`,body).then(dataOf);export const resolveViolation=(id,resolution)=>http.patch(`/violations/${id}/resolve`,{resolution}).then(dataOf);
