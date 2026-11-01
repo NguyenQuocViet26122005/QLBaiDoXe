@@ -1,0 +1,2 @@
+import http,{dataOf} from './httpClient';
+export const getPlans=()=>http.get('/plans').then(dataOf);export const createPlan=(body)=>http.post('/plans',body).then(dataOf);export const updatePlan=(id,body)=>http.patch(`/plans/${id}`,body).then(dataOf);export const getPrices=()=>http.get('/prices').then(dataOf);export const createPrice=(body)=>http.post('/prices',body).then(dataOf);export const updatePrice=(id,body)=>http.patch(`/prices/${id}`,body).then(dataOf);

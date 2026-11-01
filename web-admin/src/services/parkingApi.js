@@ -1,0 +1,2 @@
+import http,{dataOf} from './httpClient';
+export const getAreas=()=>http.get('/areas').then(dataOf);export const getArea=(id)=>http.get(`/areas/${id}`).then(dataOf);export const createArea=(body)=>http.post('/areas',body).then(dataOf);export const updateArea=(id,body)=>http.patch(`/areas/${id}`,body).then(dataOf);export const deleteArea=(id)=>http.delete(`/areas/${id}`).then(dataOf);export const getParkingReport=()=>http.get('/reports/parking').then(dataOf);
