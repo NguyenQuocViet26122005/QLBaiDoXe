@@ -1,0 +1,490 @@
+/* =====================================================================
+   PARK/OPS — lớp nâng cấp giao diện v3
+   Chỉ bổ sung phần trình bày; không thay đổi cấu trúc dữ liệu hay luồng nghiệp vụ.
+   Nguyên tắc áp dụng: emil-design-eng (ease-out, scale khi nhấn, chỉ transition
+   thuộc tính cụ thể), animation-performance (chỉ transform/opacity),
+   web-design-guidelines (focus-visible, tabular-nums, reduced motion).
+   ===================================================================== */
+
+:root {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --press-scale: .97;
+}
+
+/* Số liệu căn đều, không nhảy khi đếm */
+.metric-strip strong,
+.occupancy-panel header span,
+.revenue-bars strong,
+.data-panel > header > span,
+.pagination span { font-variant-numeric: tabular-nums; }
+
+
+/* ---------- Phản hồi khi nhấn (button / link hành động) ---------- */
+.empty-action,
+.error-banner button,
+.hero-actions a,
+.quick-actions a,
+.row-actions button,
+.pagination button,
+.not-found a,
+.notification-button,
+.sidebar-profile button,
+.dashboard-alerts a,
+.fui-Button {
+  transition-property: transform, background-color, color, box-shadow, border-color;
+  transition-duration: .16s;
+  transition-timing-function: var(--ease-out);
+}
+.empty-action:active,
+.error-banner button:active,
+.hero-actions a:active,
+.quick-actions a:active,
+.row-actions button:active:not(:disabled),
+.pagination button:active:not(:disabled),
+.not-found a:active,
+.notification-button:active,
+.sidebar-profile button:active,
+.fui-Button:active:not(:disabled) { transform: scale(var(--press-scale)); }
+
+.hero-actions .primary-link { box-shadow: 0 8px 24px -10px rgba(240, 84, 35, .9); }
+.hero-actions .primary-link svg,
+.occupancy-panel > a svg,
+.data-panel > header > a svg { transition: transform .2s var(--ease-out); }
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-actions .primary-link:hover { background: #ff6331; }
+  .hero-actions .primary-link:hover svg,
+  .occupancy-panel > a:hover svg,
+  .data-panel > header > a:hover svg { transform: translateX(3px); }
+  .hero-actions a:not(.primary-link):hover { color: #ffb79c; }
+  .quick-actions a:hover svg { transform: scale(1.08); }
+  .quick-actions svg { transition: transform .2s var(--ease-out); }
+  .notification-button:hover { background: var(--surface-2); }
+  .row-actions button:hover:not(:disabled) { background: var(--surface-2); }
+  .row-actions button.danger:hover { color: var(--red); background: #fff1ee; }
+}
+
+/* Chuông thông báo: badge nảy nhẹ khi xuất hiện */
+.notification-button b {
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--paper);
+  animation: badgeIn .4s var(--ease-out) both;
+}
+@keyframes badgeIn { from { transform: scale(.5); opacity: 0; } }
+
+/* ---------- Sidebar ---------- */
+.nav-item { transition: color .18s var(--ease-out), background-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.nav-item.active { background: linear-gradient(90deg, rgba(240, 84, 35, .16), #252925 62%); }
+.nav-item.active svg { filter: drop-shadow(0 0 6px rgba(240, 84, 35, .45)); }
+.brand strong span { text-shadow: 0 0 18px rgba(240, 84, 35, .35); }
+.sidebar-footer .building-mark { position: relative; }
+.sidebar-footer .building-mark::after {
+  content: "";
+  position: absolute;
+  right: -3px; top: -3px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 2px #1b1e1b;
+  animation: liveDot 2.4s ease-in-out infinite;
+}
+@keyframes liveDot { 50% { opacity: .35; } }
+
+/* ---------- Hero dashboard với cảnh 3D ---------- */
+.dashboard-hero {
+  background:
+    radial-gradient(120% 90% at 62% 110%, rgba(240, 84, 35, .2), transparent 55%),
+    radial-gradient(80% 70% at 10% 0%, rgba(255, 255, 255, .05), transparent 60%),
+    #171a17;
+}
+.dashboard-hero > .hero-scene {
+  position: relative;
+  align-self: stretch;
+  min-height: 330px;
+  width: 100%;
+}
+.dashboard-hero > img.hero-scene { align-self: end; height: 330px; object-fit: contain; object-position: center bottom; }
+.parking-visual { overflow: hidden; }
+.parking-scene-3d { position: absolute; inset: 0; }
+.parking-scene-3d canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  animation: sceneIn 1.1s var(--ease-out) .1s forwards;
+}
+@keyframes sceneIn { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: none; } }
+
+/* Mờ dần mép cảnh để hòa vào nền tối */
+.dashboard-hero > .hero-scene.parking-visual {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 85%, transparent);
+}
+
+
+/* ---------- Đăng nhập với cảnh 3D ---------- */
+.login-visual > .login-scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.login-visual > img.login-scene { object-fit: cover; object-position: center; }
+.login-visual > .login-scene.parking-visual + .login-visual-overlay {
+  background:
+    linear-gradient(0deg, rgba(10, 12, 10, .92) 0%, rgba(10, 12, 10, .55) 34%, rgba(10, 12, 10, 0) 62%),
+    linear-gradient(90deg, rgba(10, 12, 10, .55), rgba(10, 12, 10, 0) 55%),
+    radial-gradient(70% 60% at 70% 30%, rgba(240, 84, 35, .14), transparent 70%);
+  pointer-events: none;
+}
+.login-visual { isolation: isolate; }
+.login-visual::after {
+  /* lưới blueprint rất mảnh tạo chiều sâu */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(80% 70% at 30% 80%, #000, transparent);
+  mask-image: radial-gradient(80% 70% at 30% 80%, #000, transparent);
+}
+.login-statement em {
+  background: linear-gradient(90deg, #f05423, #ff9a6b 60%, #f05423);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.login-submit { transition: transform .16s var(--ease-out), background-color .2s var(--ease-out), box-shadow .2s var(--ease-out) !important; }
+@media (hover: hover) and (pointer: fine) {
+  .login-submit:hover:not(:disabled) { background: #1f231f !important; box-shadow: 0 12px 28px -14px rgba(18, 20, 18, .8); }
+  .login-submit:hover:not(:disabled) svg { transform: translateX(3px); }
+}
+.login-submit svg { transition: transform .2s var(--ease-out); }
+.login-submit:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.inline-error { animation: shakeIn .4s var(--ease-out); }
+@keyframes shakeIn { 0% { transform: translateX(-6px); opacity: 0; } 40% { transform: translateX(4px); opacity: 1; } 70% { transform: translateX(-2px); } }
+
+/* ---------- Bảng ---------- */
+.data-table tbody tr { transition: background-color .18s var(--ease-out); }
+.data-table tbody tr.clickable-row { cursor: pointer; }
+.data-table tbody tr:hover td:first-child { box-shadow: inset 2px 0 0 var(--orange); }
+.data-table thead th { position: sticky; top: 0; z-index: 1; background: #f0ede5; }
+.plate {
+  display: inline-block;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 -2px 0 rgba(18, 20, 18, .05);
+}
+.status-badge { transition: background-color .2s var(--ease-out); }
+.status-badge.warning i, .status-badge.info i { animation: liveDot 1.8s ease-in-out infinite; }
+
+/* Ô tìm kiếm */
+.search-box { border-radius: 11px; transition: border-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.search-box svg { transition: color .18s var(--ease-out); }
+.search-box:focus-within svg { color: var(--orange); }
+
+/* Skeleton có vệt sáng chạy thay vì nhấp nháy */
+.table-skeleton span,
+.table-skeleton .skeleton-heading,
+.dashboard-skeleton span,
+.dashboard-skeleton b {
+  background: linear-gradient(100deg, #ebe8df 30%, #f6f3ec 50%, #ebe8df 70%) 0 0 / 300% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.dashboard-skeleton span, .dashboard-skeleton b { border-radius: 16px; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* Header: viền mờ khi cuộn trang */
+.app-header { box-shadow: 0 1px 0 rgba(255, 255, 255, .6), 0 10px 30px -24px rgba(18, 20, 18, .5); }
+
+/* ---------- Giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .parking-scene-3d canvas { opacity: 1; animation: none; }
+
+  .table-skeleton span, .table-skeleton .skeleton-heading, .dashboard-skeleton span, .dashboard-skeleton b { animation: none; }
+}
+
+/* Tổng quan: ưu tiên hành động và số liệu ngay khi mở trang. */
+.dashboard-page {
+  gap: 20px;
+}
+
+.dashboard-page .page-heading {
+  padding-bottom: 16px;
+}
+
+.dashboard-page .page-heading h1 {
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+}
+
+.dashboard-page .page-heading p {
+  margin-top: 6px;
+}
+
+.dashboard-page .page-heading::after {
+  content: none;
+}
+
+.dashboard-hero {
+  min-height: 224px;
+  grid-template-columns: minmax(255px, 1.05fr) minmax(0, 1fr) minmax(178px, .64fr);
+  align-items: center;
+  border-radius: 16px;
+  box-shadow: none;
+  background: #171a17;
+}
+
+.dashboard-hero::after { content: none; }
+
+.dashboard-welcome {
+  padding: 24px 0 24px 28px;
+}
+
+.dashboard-welcome h2 {
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-welcome p {
+  margin: 8px 0 16px;
+  line-height: 1.5;
+}
+
+.hero-actions { flex-wrap: wrap; gap: 8px 14px; }
+.hero-actions a { min-height: 40px; }
+.hero-actions .primary-link { padding: 8px 12px; box-shadow: none; color: #171a17; }
+.dashboard-hero > .hero-scene { min-height: 224px; }
+.dashboard-hero > img.hero-scene { align-self: center; height: 224px; }
+
+.quick-actions {
+  grid-column: auto;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin: 16px 20px 16px 0;
+  padding: 0 0 0 12px;
+  border: 0;
+  border-left: 1px solid #3c423a;
+  border-radius: 0;
+  background: transparent;
+}
+
+.quick-actions a {
+  min-height: 40px;
+  padding: 8px;
+  line-height: 1.35;
+}
+
+.quick-actions svg { flex: none; }
+
+.metric-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(168px, 1.42fr);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.metric-strip article,
+.metric-strip article:nth-child(3),
+.metric-strip article:nth-child(even) {
+  min-height: 88px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
+  padding: 12px;
+  border: 0;
+  border-right: 1px solid var(--line);
+}
+
+.metric-strip article:last-child { border-right: 0; }
+.metric-strip article.wide { background: #f7f3ea; }
+
+.metric-strip .metric-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: #a83c19;
+}
+
+.metric-strip .metric-icon svg { width: 15px; height: 15px; }
+.metric-strip article > .metric-label { line-height: 1.2; font-size: .75rem; }
+.metric-strip article > span.metric-label:not(.metric-icon) { margin-top: 0; }
+
+.metric-strip strong {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: 750 1.5rem/1.15 var(--display);
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+
+.metric-strip .wide strong { font-size: 1.125rem; }
+
+.dashboard-page .data-panel,
+.dashboard-page .analytics-panel,
+.dashboard-page .occupancy-panel {
+  min-width: 0;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.dashboard-page .data-panel h2,
+.dashboard-page .analytics-panel h2,
+.dashboard-page .occupancy-panel h2 {
+  font-size: 1rem;
+}
+
+.dashboard-page .data-panel header p,
+.dashboard-page .analytics-panel header p {
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+.dashboard-page .data-panel > header > a,
+.dashboard-page .occupancy-panel > a {
+  color: #a23717;
+  white-space: nowrap;
+}
+
+.dashboard-page .data-panel > header > a { min-height: 36px; }
+.dashboard-page .dashboard-alerts a { color: #ffab89; }
+.dashboard-page .dashboard-alerts span { color: #bbbbb2; }
+
+.dashboard-analytics {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-analytics header {
+  min-height: 64px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.dashboard-analytics .analytics-panel header > b {
+  font: 750 1.125rem/1.2 var(--display);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-analytics .occupancy-panel header > span {
+  color: #a23717;
+  font-size: 1.125rem;
+}
+
+.dashboard-analytics .revenue-bars { padding: 18px; gap: 18px; }
+
+.revenue-bars > .revenue-method {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 12px;
+  font-size: .8125rem;
+}
+
+.revenue-method > strong,
+.revenue-method > small { display: block; }
+
+.revenue-method > strong {
+  font: 700 .8125rem/1.35 var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+.revenue-method > small { white-space: nowrap; }
+.revenue-method > .revenue-track,
+.occupancy-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9e3d8;
+}
+
+.revenue-method i,
+.occupancy-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #cd4b20;
+  box-shadow: none;
+  animation: none;
+}
+
+.occupancy-overview {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  font-size: .8125rem;
+}
+
+.occupancy-overview strong { font-variant-numeric: tabular-nums; }
+.dashboard-analytics .area-list { margin-bottom: 12px; }
+.dashboard-analytics .area-list div { gap: 12px; font-size: .75rem; }
+.dashboard-analytics .area-list b { flex: none; }
+
+.table-scroll:focus-visible { outline-offset: -3px !important; }
+.data-table tbody tr { animation: none; }
+.data-table thead th {
+  color: #565b52;
+  font: 700 .75rem/1.2 var(--display);
+  letter-spacing: .015em;
+}
+.data-table td { font-size: .8125rem; }
+
+@media (max-width: 1200px) {
+  .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-strip article:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+  .metric-strip article:nth-child(3n) { border-right: 0; }
+}
+
+@media (max-width: 1099px) {
+  .dashboard-hero { grid-template-columns: minmax(0, 1fr) 190px; }
+  .dashboard-hero > img.hero-scene {
+    position: absolute;
+    inset: 0 164px 0 auto;
+    width: 42%;
+    height: 100%;
+    object-position: right center;
+    opacity: .23;
+    mask-image: linear-gradient(90deg, transparent, #000 45%);
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-analytics { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 620px) {
+  .dashboard-page { gap: 14px; }
+  .dashboard-page .page-heading { align-items: start; gap: 12px; }
+  .dashboard-page .page-heading h1 { font-size: 1.5rem; }
+  .dashboard-hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .dashboard-welcome { padding: 18px 16px 14px; }
+  .dashboard-welcome h2 { font-size: 1.5rem; }
+  .dashboard-welcome p { margin: 6px 0 12px; font-size: .8125rem; }
+  .hero-actions { flex-direction: row; align-items: center; }
+  .dashboard-hero > img.hero-scene { inset: 0 0 auto auto; width: 46%; height: 130px; mask-image: radial-gradient(ellipse at right center, #000 15%, transparent 72%); }
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+    padding: 4px 8px;
+    margin: 0;
+    border-left: 0;
+    border-top: 1px solid #3c423a;
+  }
+  .quick-actions a { justify-content: center; padding: 6px 4px; font-size: .6875rem; }
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-strip article:nth-child(n) { min-height: 70px; padding: 8px 10px; }
+  .metric-strip article:nth-child(3) { border-right: 1px solid var(--line); }
+  .metric-strip article:nth-child(4) { border-bottom: 1px solid var(--line); }
+  .metric-strip article:nth-child(even) { border-right: 0; }
+  .metric-strip strong { font-size: 1.25rem; }
+  .dashboard-page .data-panel > header { align-items: start; gap: 8px; padding: 12px; }
+  .pagination button { width: 40px; height: 40px; }
+}
