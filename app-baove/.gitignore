@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+dist/
+dist-mobile-check/
+dist-ios-check/
+dist-web-check/
+tests/artifacts/
+.env.local
+npm-debug.log*

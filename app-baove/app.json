@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "PARK/OPS",
+    "slug": "parking-01-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "vn.parkhub.baove"
+    },
+    "android": {
+      "package": "vn.parkhub.baove",
+      "adaptiveIcon": {
+        "backgroundColor": "#171a17"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép PARK/OPS sử dụng camera để quét mã QR trên vé xe.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-status-bar"
+    ]
+  }
+}
